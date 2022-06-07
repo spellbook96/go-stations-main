@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -36,8 +37,8 @@ func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) 
 
 // Read handles the endpoint that reads the TODOs.
 func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*model.ReadTODOResponse, error) {
+	fmt.Printf("Running Read, PrevID:%d,Size:%d\n", req.PrevID, req.Size)
 	TODOS, err := h.svc.ReadTODO(ctx, req.PrevID, req.Size)
-	fmt.Println("RUNNING READ")
 	fmt.Printf("%+v\n", TODOS)
 	if err != nil {
 		return nil, err
@@ -87,11 +88,19 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// fmt.Printf("%s\n", req.TODO.Subject)
 	case http.MethodGet:
 		var req model.ReadTODORequest
-		err := json.NewDecoder(r.Body).Decode(&req)
+		values := r.URL.Query()
+		fmt.Printf("values:%+v\n", values)
+		prevID, err := strconv.ParseInt(values.Get("prev_id"), 10, 64)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println("[ERROR]", err)
-			return
+			prevID = 0
+		}
+		size, err := strconv.ParseInt(values.Get("size"), 10, 64)
+		if err != nil {
+			size = 0
+		}
+		req = model.ReadTODORequest{
+			PrevID: prevID,
+			Size:   size,
 		}
 		resp, err := h.Read(r.Context(), &req)
 		if err != nil {
@@ -105,6 +114,7 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			log.Println("[ERROR]", err)
 			return
 		}
+
 	case http.MethodPut:
 		var req model.UpdateTODORequest
 		err := json.NewDecoder(r.Body).Decode(&req)

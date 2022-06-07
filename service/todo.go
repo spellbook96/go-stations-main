@@ -57,17 +57,27 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 	const (
 		read       = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC LIMIT ?`
 		readWithID = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC LIMIT ?`
+		all_read   = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC`
 	)
 
 	TODOS := []*model.TODO{}
-	if size == 0 {
-		return TODOS, nil
-	}
-	// fmt.Printf("Running ReadTODO: prevID:%d,size:%d\n", prevID, size)
+	fmt.Printf("Running ReadTODO: prevID:%d,size:%d\n", prevID, size)
+
 	if prevID == 0 {
-		rows, err := s.db.Query(read, size)
-		if err != nil {
-			return nil, err
+		// Default: read all TODOs
+		var rows *sql.Rows
+		var err error
+		if size == 0 {
+			fmt.Println("Running ReadTODO: read all")
+			rows, err = s.db.Query(all_read)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			rows, err = s.db.Query(read, size)
+			if err != nil {
+				return nil, err
+			}
 		}
 		defer rows.Close()
 		for rows.Next() {
@@ -105,7 +115,11 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 	if subject == "" {
 		return nil, model.ErrNotFound{Message: "subject must not be empty"}
 	}
-	s.db.PrepareContext(ctx, update)
+	// s.db.PrepareContext(ctx, update)
+	// curr, _ := s.db.QueryContext(ctx, confirm, id)
+	// currTODO := &model.TODO{}
+	// curr.Scan(&currTODO.Subject, &currTODO.Description, &currTODO.CreatedAt, &currTODO.UpdatedAt)
+	// createdTime := currTODO.CreatedAt
 	result, _ := s.db.ExecContext(ctx, update, subject, description, id)
 	num, _ := result.RowsAffected()
 	if num == 0 {
@@ -115,7 +129,7 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 		ID:          id,
 		Subject:     subject,
 		Description: description,
-		CreatedAt:   time.Now(), //後で修正する必要がある
+		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
 	return TODO, nil
