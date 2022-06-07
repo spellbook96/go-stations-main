@@ -36,8 +36,13 @@ func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) 
 
 // Read handles the endpoint that reads the TODOs.
 func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*model.ReadTODOResponse, error) {
-	_, _ = h.svc.ReadTODO(ctx, 0, 0)
-	return &model.ReadTODOResponse{}, nil
+	TODOS, err := h.svc.ReadTODO(ctx, req.PrevID, req.Size)
+	fmt.Println("RUNNING READ")
+	fmt.Printf("%+v\n", TODOS)
+	if err != nil {
+		return nil, err
+	}
+	return &model.ReadTODOResponse{TODOs: TODOS}, nil
 }
 
 // Update handles the endpoint that updates the TODO.

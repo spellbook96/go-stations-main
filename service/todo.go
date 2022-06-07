@@ -58,18 +58,41 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 		read       = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC LIMIT ?`
 		readWithID = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC LIMIT ?`
 	)
-	if prevID == 0 {
-		return nil, errors.New("prevID must not be empty")
-	}
+
+	TODOS := []*model.TODO{}
 	if size == 0 {
-		return nil, errors.New("size must not be empty")
+		return TODOS, nil
 	}
-	var TODOS []*model.TODO
-	for row := s.db.QueryRow(readWithID, prevID, size); row != nil; row = s.db.QueryRow(readWithID, prevID, size) {
-		TODO := &model.TODO{}
-		row.Scan(&TODO.ID, &TODO.Subject, &TODO.Description, &TODO.CreatedAt, &TODO.UpdatedAt)
-		TODOS = append(TODOS, TODO)
+	// fmt.Printf("Running ReadTODO: prevID:%d,size:%d\n", prevID, size)
+	if prevID == 0 {
+		rows, err := s.db.Query(read, size)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var todo model.TODO
+			err := rows.Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+			if err != nil {
+				return nil, err
+			}
+			TODOS = append(TODOS, &todo)
+
+		}
+	} else {
+		rows, _ := s.db.QueryContext(ctx, readWithID, prevID, size)
+		// fmt.Printf("%+v\n", TODOS)
+		defer rows.Close()
+		for rows.Next() {
+			TODO := &model.TODO{}
+			if err := rows.Scan(&TODO.ID, &TODO.Subject, &TODO.Description, &TODO.CreatedAt, &TODO.UpdatedAt); err != nil {
+				return nil, err
+			}
+			// fmt.Printf("%+v\n", TODO)
+			TODOS = append(TODOS, TODO)
+		}
 	}
+	// fmt.Printf("%+v\n", TODOS)
 	return TODOS, nil
 }
 
