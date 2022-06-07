@@ -86,7 +86,7 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 	result, _ := s.db.ExecContext(ctx, update, subject, description, id)
 	num, _ := result.RowsAffected()
 	if num == 0 {
-		return nil, model.ErrNotFound{Message: "ID not found"}
+		return nil, model.ErrNotFound{Message: "number of rows affected is 0"}
 	}
 	TODO := &model.TODO{
 		ID:          id,
