@@ -36,13 +36,6 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-	ctx = context.WithValue(ctx, "TODO", TODO)
-	if _, err := s.db.ExecContext(ctx, insert, subject, description); err != nil {
-		return nil, err
-	}
-	if err := s.db.QueryRowContext(ctx, confirm, TODO.ID).Scan(&TODO.Subject, &TODO.Description, &TODO.CreatedAt, &TODO.UpdatedAt); err != nil {
-		return nil, err
-	}
 
 	return TODO, nil
 }
