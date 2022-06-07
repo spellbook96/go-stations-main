@@ -41,7 +41,7 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 	}
 	// TODO := s.db.QueryRow(confirm, subject, description)
 	TODO := &model.TODO{
-		ID:          int(idint),
+		ID:          idint,
 		Subject:     subject,
 		Description: description,
 		CreatedAt:   time.Now(),
@@ -80,15 +80,21 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
 	if subject == "" {
-		return nil, errors.New("subject must not be empty")
+		return nil, model.ErrNotFound{Message: "subject must not be empty"}
+	}
+	s.db.PrepareContext(ctx, update)
+	result, _ := s.db.ExecContext(ctx, update, subject, description, id)
+	num, _ := result.RowsAffected()
+	if num == 0 {
+		return nil, model.ErrNotFound{Message: "ID not found"}
 	}
 	TODO := &model.TODO{
+		ID:          id,
 		Subject:     subject,
 		Description: description,
-		CreatedAt:   time.Now(),
+		CreatedAt:   time.Now(), //後で修正する必要がある
 		UpdatedAt:   time.Now(),
 	}
-
 	return TODO, nil
 }
 
