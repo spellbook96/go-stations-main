@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/TechBowl-japan/go-stations/model"
@@ -143,5 +144,25 @@ func (s *TODOService) DeleteTODO(ctx context.Context, ids []int64) error {
 		return errors.New("ids must not be empty")
 	}
 
+	query := fmt.Sprintf(deleteFmt, strings.Repeat(",?", len(ids)-1))
+	fmt.Println(query)
+	stmt, err := s.db.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	args := make([]interface{}, len(ids))
+	for i := range args {
+		args[i] = ids[i]
+	}
+	rows, err := stmt.ExecContext(ctx, args...)
+
+	if err != nil {
+		return err
+	}
+	cnt, _ := rows.RowsAffected()
+	if cnt == 0 {
+		return model.ErrNotFound{Message: "ID not found"}
+	}
 	return nil
 }
