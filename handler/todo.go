@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
 
 	"github.com/TechBowl-japan/go-stations/model"
@@ -58,8 +59,8 @@ func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) 
 
 // Delete handles the endpoint that deletes the TODOs.
 func (h *TODOHandler) Delete(ctx context.Context, req *model.DeleteTODORequest) (*model.DeleteTODOResponse, error) {
-	_ = h.svc.DeleteTODO(ctx, nil)
-	return &model.DeleteTODOResponse{}, nil
+	err := h.svc.DeleteTODO(ctx, req.IDs)
+	return &model.DeleteTODOResponse{}, err
 }
 
 func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -144,9 +145,13 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			log.Println("[ERROR]", err)
 			return
 		}
+		if reflect.DeepEqual([]int64{}, req.IDs) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		resp, err := h.Delete(r.Context(), &req)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusNotFound)
 			log.Println("[ERROR]", err)
 			return
 		}
